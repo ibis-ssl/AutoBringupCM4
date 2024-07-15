@@ -11,6 +11,7 @@ import termios
 import tty
 import select
 import argparse
+import time
 
 def send_ctrl_c(channel):
     # Ctrl+Cを送信する
@@ -70,6 +71,7 @@ def ssh_connect(hostname, port, username, password, command):
     client.close()
 
 if __name__ == "__main__":
+    # time.sleep(10)
     parser = argparse.ArgumentParser()
     parser.add_argument('--hostname',type=str, required=True)
     parser.add_argument('--port', type=int, default=22)
