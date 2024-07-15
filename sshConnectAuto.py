@@ -10,14 +10,13 @@ import sys
 import termios
 import tty
 import select
-
-command = "~/Orion_CM4/ai_cmd_v2.out -s 2000000"
+import argparse
 
 def send_ctrl_c(channel):
     # Ctrl+Cを送信する
     channel.send('\x03')
 
-def interactive_shell(channel):
+def interactive_shell(channel, command):
     oldtty = termios.tcgetattr(sys.stdin)
     try:
         tty.setraw(sys.stdin.fileno())
@@ -47,7 +46,7 @@ def interactive_shell(channel):
 
             # キーボード入力を読み取る
             if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-                x = sys.stdin.read()
+                x = sys.stdin.read(1)
                 if len(x) == 0:
                     break
                 if x == '\x03':  # Ctrl+C
@@ -58,22 +57,29 @@ def interactive_shell(channel):
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, oldtty)
 
-def ssh_connect(hostname, port, username, password):
+def ssh_connect(hostname, port, username, password, command):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     client.connect(hostname, port=port, username=username, password=password)
 
     channel = client.invoke_shell()
     
-    interactive_shell(channel)
+    interactive_shell(channel, command)
 
     channel.close()
     client.close()
 
 if __name__ == "__main__":
-    hostname = "192.168.20.101"
-    port = 22
-    username = "ibis"
-    password = "pw"
-
-    ssh_connect(hostname, port, username, password)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--hostname',type=str, required=True)
+    parser.add_argument('--port', type=int, default=22)
+    parser.add_argument('--username', type=str, default='ibis')
+    parser.add_argument('--password', type=str, default='ibis')
+    parser.add_argument('--command', type=str, default="~/Orion_CM4/ai_cmd_v2.out -s 2000000\n")
+    args = parser.parse_args()
+    hostname = args.hostname
+    port = args.port
+    username = args.username
+    password = args.password
+    command = args.command
+    ssh_connect(hostname, port, username, password, command)
